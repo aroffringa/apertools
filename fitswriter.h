@@ -14,12 +14,6 @@
 class FitsWriter : protected FitsIOChecker
 {
 public:
-	enum Unit {
-		JanskyPerBeam,
-		Jansky,
-		Kelvin,
-		MilliKelvin
-	};
 	enum DimensionType { 
 		FrequencyDimension, 
 		PolarizationDimension, 
@@ -40,6 +34,7 @@ public:
 		_isUV(false),
 		_telescopeName(), _observer(), _objectName(),
 		_origin("AO/WSImager"), _originComment("Imager written by Andre Offringa"),
+		_projection(SINProjection),
 		_multiFPtr(nullptr)
 	{
 	}
@@ -57,6 +52,7 @@ public:
 		_isUV(false),
 		_telescopeName(), _observer(), _objectName(),
 		_origin("AO/WSImager"), _originComment("Imager written by Andre Offringa"),
+		_projection(SINProjection),
 		_multiFPtr(nullptr)
 	{
 		SetMetadata(reader);
@@ -259,6 +255,7 @@ private:
 	bool _isUV;
 	std::string _telescopeName, _observer, _objectName;
 	std::string _origin, _originComment;
+	enum Projection _projection;
 	std::vector<std::string> _history;
 	std::vector<Dimension> _extraDimensions;
 	std::map<std::string, std::string> _extraStringKeywords;

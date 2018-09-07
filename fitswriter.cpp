@@ -121,13 +121,23 @@ void FitsWriter::writeHeaders(fitsfile *& fptr, const std::string& filename, con
 		double
 			stepXDeg = (-_pixelSizeX / M_PI)*180.0,
 			stepYDeg = ( _pixelSizeY / M_PI)*180.0;
-		fits_write_key(fptr, TSTRING, "CTYPE1", (void*) "RA---SIN", "Right ascension angle cosine", &status); checkStatus(status, filename);
+		const char *raProj, *decProj;
+		if(_projection == NCPProjection)
+		{
+			raProj  = "RA---NCP";
+			decProj = "DEC--NCP";
+		}
+		else {
+			raProj = "RA---SIN";
+			decProj = "DEC--SIN";
+		}
+		fits_write_key(fptr, TSTRING, "CTYPE1", (void*) raProj, "Right ascension angle cosine", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TDOUBLE, "CRPIX1", (void*) &centrePixelX, "", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TDOUBLE, "CRVAL1", (void*) &phaseCentreRADeg, "", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TDOUBLE, "CDELT1", (void*) &stepXDeg, "", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TSTRING, "CUNIT1", (void*) "deg", "", &status); checkStatus(status, filename);
 		
-		fits_write_key(fptr, TSTRING, "CTYPE2", (void*) "DEC--SIN", "Declination angle cosine", &status); checkStatus(status, filename);
+		fits_write_key(fptr, TSTRING, "CTYPE2", (void*) decProj, "Declination angle cosine", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TDOUBLE, "CRPIX2", (void*) &centrePixelY, "", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TDOUBLE, "CRVAL2", (void*) &phaseCentreDecDeg, "", &status); checkStatus(status, filename);
 		fits_write_key(fptr, TDOUBLE, "CDELT2", (void*) &stepYDeg, "", &status); checkStatus(status, filename);
@@ -329,6 +339,7 @@ void FitsWriter::SetMetadata(const FitsReader& reader)
 	_objectName = reader.ObjectName();
 	_origin = reader.Origin();
 	_originComment = reader.OriginComment();
+	_projection = reader.ProjectionType();
 	_history = reader.History();
 }
 

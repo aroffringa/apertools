@@ -1,5 +1,6 @@
 #include "fitsreader.h"
 #include "polarization.h"
+#include "units/imagecoordinates.h"
 
 #include <stdexcept>
 #include <sstream>
@@ -204,7 +205,7 @@ void FitsReader::initialize()
 			std::ostringstream crval, cdelt;
 			crval << "CRVAL" << (i+1);
 			cdelt << "CDELT" << (i+1);
-			if(tmp == "FREQ" || tmp == "VRAD")
+			if(tmp.substr(0, 4) == "FREQ" || tmp == "VRAD")
 			{
 				_nFrequencies = naxes[i];
 				_frequency = readDoubleKey(crval.str().c_str());
@@ -265,8 +266,14 @@ void FitsReader::initialize()
 	
 	if(ReadStringKeyIfExists("CTYPE1", tmp))
 	{
-		if(tmp != "RA---SIN" && tmp != "RA---NCP" && _checkCType)
+		if(tmp == "RA---NCP")
+			_projection = NCPProjection;
+		else if(tmp == "RA---SIN")
+			_projection = SINProjection;
+		else if(_checkCType)
 			throw std::runtime_error("Invalid value for CTYPE1");
+		else
+			_projection = SINProjection;
 	}
 	
 	ReadDoubleKeyIfExists("CRVAL1", _phaseCentreRA);

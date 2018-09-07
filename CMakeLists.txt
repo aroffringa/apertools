@@ -21,6 +21,7 @@ find_package(CFITSIO REQUIRED)
 find_library(PTHREAD_LIB pthread REQUIRED)
 
 include_directories(${CASACORE_INCLUDE_DIRS})
+include_directories(${CFITSIO_INCLUDE_DIR})
 
 # The following stuff will set the "rpath" correctly, so that
 # LD_LIBRARY_PATH doesn't have to be set.
@@ -41,6 +42,9 @@ IF("${isSystemDir}" STREQUAL "-1")
 ENDIF("${isSystemDir}" STREQUAL "-1")
 
 add_executable(apbeam apbeam.cpp fitsreader.cpp fitswriter.cpp fitsiochecker.cpp image.cpp)
-target_link_libraries(apbeam ${CASACORE_LIBRARIES})
+target_link_libraries(apbeam ${CASACORE_LIBRARIES} ${CFITSIO_LIBRARY})
+
+add_executable(applybeam applybeam.cpp fitsreader.cpp fitswriter.cpp fitsiochecker.cpp)
+target_link_libraries(applybeam ${CASACORE_LIBRARIES} ${CFITSIO_LIBRARY})
 
 message(STATUS "Flags passed to C++ compiler: " ${CMAKE_CXX_FLAGS})

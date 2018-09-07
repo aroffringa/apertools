@@ -15,6 +15,7 @@ public:
 		Kelvin,
 		MilliKelvin
 	};
+	enum Projection { SINProjection, NCPProjection };
 };
 
 #endif

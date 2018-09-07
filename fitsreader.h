@@ -87,6 +87,8 @@ class FitsReader : public FitsIOChecker
 		
 		double TimeDimensionStart() const { return _timeDimensionStart; }
 		double TimeDimensionIncr() const { return _timeDimensionIncr; }
+		
+		enum Projection ProjectionType() const { return _projection; }
 	private:
 		double readDoubleKey(const char* key);
 		std::string readStringKey(const char* key);
@@ -107,6 +109,7 @@ class FitsReader : public FitsIOChecker
 		bool _hasBeam;
 		double _beamMajorAxisRad, _beamMinorAxisRad, _beamPositionAngle;
 		double _timeDimensionStart, _timeDimensionIncr;
+		enum Projection _projection;
 		
 		PolarizationEnum _polarization;
 		FitsIOChecker::Unit _unit;

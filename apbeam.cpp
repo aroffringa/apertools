@@ -2,7 +2,10 @@
 #include "fitswriter.h"
 #include "image.h"
 
+#include "units/angle.h"
 #include "units/imagecoordinates.h"
+#include "units/radeccoord.h"
+#include "units/ncpprojection.h"
 
 #include <cmath>
 #include <iostream>
@@ -12,11 +15,13 @@
 
 int main(int argc, char* argv[])
 {
-	if(argc < 3)
+	if(argc < 4)
 	{
 		std::cout <<
-			"Syntax: apbeam [options] <input> <output>\n\n"
-			"Will create an output file with a simple Westerbork beam for the given input beam.\n";
+			"\tSyntax: apbeam [options] <input> <outbeam> <outweight>\n"
+			"This tool creates an output file with a simple Westerbork beam for the given input beam.\n"
+			"options:\n"
+			"\t-frequency <value in MHz>\n";
 		return 0;
 	}
 	
@@ -36,11 +41,12 @@ int main(int argc, char* argv[])
 	}
 	
 	const char* inpFilename = argv[argi];
-	const char* outFilename = argv[argi+1];
+	const char* outBeamFilename = argv[argi+1];
+	const char* outWeightFilename = argv[argi+2];
 	
 	FitsReader reader(inpFilename);
 	size_t width = reader.ImageWidth(), height = reader.ImageHeight();
-	Image image(width, height);
+	Image beam(width, height), weight(width, height);
 
 	// pb = cos**6(beta*freq(MHz)*angle(degrees))
 	// where beta = 0.0629 for f < 500 MHz, and 0.065 for f > 500 MHz
@@ -52,28 +58,43 @@ int main(int argc, char* argv[])
 		beta = 0.0629;
 	else
 		beta = 0.065;
-	std::cout << "Making beam with freq=" << freqMHz << " MHz\n";
+	if(reader.ProjectionType() == FitsReader::NCPProjection)
+		std::cout << "Image is in deprecated NCP projection.\n";
+	std::cout <<
+		"Making beam with freq=" << freqMHz << " MHz\n"
+		"Pixelscale: " << Angle::ToNiceString(reader.PixelSizeX()) << " x " << Angle::ToNiceString(reader.PixelSizeY()) << '\n' <<
+		"Phase centre: " << RaDecCoord::RaDecToString(reader.PhaseCentreRA(), reader.PhaseCentreDec()) << '\n';
 	
 	// In the equation, angle should be in degrees, but we calculate it in rad so absorp the conversion in beta:
-	beta *= M_PI/180.0;
+	//beta *= 180.0/M_PI; // it's also cos in degrees so not necessary
 
-	double* pbPtr = image.data();
+	double* pbPtr = beam.data();
+	double* wPtr = weight.data();
 	for(size_t y=0; y!=height; ++y)
 	{
 		for(size_t x=0; x!=width; ++x)
 		{
 			double l, m, ra, dec;
 			ImageCoordinates::XYToLM(x, y, reader.PixelSizeX(), reader.PixelSizeY(), width, height, l, m);
-			ImageCoordinates::LMToRaDec(l, m, reader.PhaseCentreRA(), reader.PhaseCentreDec(), ra, dec);
+			if(reader.ProjectionType() == FitsReader::SINProjection)
+			{
+				ImageCoordinates::LMToRaDec(l, m, reader.PhaseCentreRA(), reader.PhaseCentreDec(), ra, dec);
+			}
+			else {
+				NCPProjection::LMToRaDec(l, m, reader.PhaseCentreRA(), reader.PhaseCentreDec(), ra, dec);
+			}
 			double angle = ImageCoordinates::AngularDistance(ra, dec, reader.PhaseCentreRA(), reader.PhaseCentreDec());
+			if(x==0 && y==0)
+				std::cout << "Max angle: " << Angle::ToNiceString(angle) << '\n';
 			
 			double cosTerm = cos(beta*freqMHz*angle);
 			*pbPtr = cosTerm*cosTerm*cosTerm*cosTerm*cosTerm*cosTerm;
-			if(x == width/2)
-				std::cout << *pbPtr << ' ';
+			*wPtr = (*pbPtr) * (*pbPtr);
 			++pbPtr;
+			++wPtr;
 		}
 	}
 	FitsWriter writer(reader);
-	writer.Write(outFilename, image.data());
+	writer.Write(outBeamFilename, beam.data());
+	writer.Write(outWeightFilename, weight.data());
 }
